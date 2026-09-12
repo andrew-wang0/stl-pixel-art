@@ -40,14 +40,14 @@ class ConversionTests(unittest.TestCase):
         summary = convert(self.source, out)
         self.assertEqual([p['pixels'] for p in summary['parts']], [1, 1, 2])
         meshes = {p['index']: trimesh.load_mesh(out / p['file']) for p in summary['parts']}
-        np.testing.assert_allclose(meshes[1].bounds, [[0, .4, 0], [.4, .8, .1]])
-        np.testing.assert_allclose(meshes[2].bounds, [[0, 0, 0], [.8, .4, .1]])
+        np.testing.assert_allclose(meshes[1].bounds, [[0, .3, 0], [.3, .6, .1]])
+        np.testing.assert_allclose(meshes[2].bounds, [[0, 0, 0], [.6, .3, .1]])
         backing = trimesh.load_mesh(out / "backing.stl")
-        np.testing.assert_allclose(backing.bounds, [[0, 0, .1], [.8, .8, 1]])
+        np.testing.assert_allclose(backing.bounds, [[0, 0, .1], [.6, .6, 1]])
         for mesh in [*meshes.values(), backing]:
             self.assertTrue(mesh.is_watertight)
             self.assertTrue(mesh.is_winding_consistent)
-        self.assertAlmostEqual(sum(m.volume for m in meshes.values()) + backing.volume, .64, places=6)
+        self.assertAlmostEqual(sum(m.volume for m in meshes.values()) + backing.volume, .36, places=6)
         self.assertTrue((out / "palette.json").exists())
 
     def test_dimensions_and_output_protection(self):

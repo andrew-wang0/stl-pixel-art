@@ -63,7 +63,7 @@ def pixel_mesh(mask, pixel_mm, color_height):
     return mesh
 
 
-def convert(input_path, output_dir="pixel_stls", pixel_mm=0.4,
+def convert(input_path, output_dir="pixel_stls", pixel_mm=0.3,
             color_height=0.1, total_height=1.0):
     """Write new STL parts and a palette manifest; never overwrite existing files."""
     if not all(math.isfinite(v) and v > 0 for v in (pixel_mm, color_height, total_height)):
@@ -126,7 +126,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input", type=Path, help="Indexed PNG exported from GIMP")
     parser.add_argument("-o", "--output-dir", type=Path, default=Path("pixel_stls"))
-    parser.add_argument("--pixel-mm", type=float, default=0.4)
+    parser.add_argument("--pixel-mm", type=float, default=0.3)
     parser.add_argument("--color-height", type=float, default=0.1)
     parser.add_argument("--total-height", type=float, default=1.0)
     args = parser.parse_args(argv)

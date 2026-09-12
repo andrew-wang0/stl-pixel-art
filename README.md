@@ -18,7 +18,7 @@ stl-pixel-art pixelart.png --output-dir pixel_stls
 You can also run `python pixel_art.py pixelart.png` after installation.
 
 ```sh
-stl-pixel-art pixelart.png --pixel-mm 0.40 --color-height 0.10 --total-height 1.00 -o pixel_stls
+stl-pixel-art pixelart.png --pixel-mm 0.30 --color-height 0.10 --total-height 1.00 -o pixel_stls
 python -m unittest discover -s tests -v
 ```
 
@@ -38,9 +38,9 @@ Filenames encode palette index and RGB, not automatic filament assignments. The 
 
 ## Geometry and orientation
 
-At the defaults, each pixel occupies 0.40 × 0.40 mm. Color parts occupy Z=0–0.10 mm, and the backing occupies Z=0.10–1.00 mm. A 200 × 200 image produces an 80 × 80 mm model. Every part uses the same origin; no mesh is independently centered.
+At the defaults, each pixel occupies 0.30 × 0.30 mm. Color parts occupy Z=0–0.10 mm, and the backing occupies Z=0.10–1.00 mm. A 200 × 200 image produces an 60 × 60 mm model. Every part uses the same origin; no mesh is independently centered.
 
-The PNG rows are flipped vertically before extrusion: the bottom PNG row occupies Y=0–0.40 mm and X increases to the right. The artwork is recognizable from above (+Z). Because the intended visible surface is the underside, viewing the finished print from below reverses handedness. For readable text on that face, horizontally mirror the input in GIMP before conversion.
+The PNG rows are flipped vertically before extrusion: the bottom PNG row occupies Y=0–0.30 mm and X increases to the right. The artwork is recognizable from above (+Z). Because the intended visible surface is the underside, viewing the finished print from below reverses handedness. For readable text on that face, horizontally mirror the input in GIMP before conversion.
 
 Top and bottom faces follow the pixel grid. Side faces exist only on color boundaries, including hole boundaries. Adjacent same-color pixels share vertices and have no internal walls; the program does not create a separate cube object per pixel. It validates closed surfaces, consistent winding, and positive volume before export.
 
