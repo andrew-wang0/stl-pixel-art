@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 import trimesh
 
-from pixel_art import convert, main, pixel_mesh
+from pixel_art import alignment_markers, convert, main, pixel_mesh
 
 
 class GeometryTests(unittest.TestCase):
@@ -49,6 +49,27 @@ class ConversionTests(unittest.TestCase):
             self.assertTrue(mesh.is_winding_consistent)
         self.assertAlmostEqual(sum(m.volume for m in meshes.values()) + backing.volume, .36, places=6)
         self.assertTrue((out / "palette.json").exists())
+
+    def test_alignment_pixels(self):
+        out = self.root / 'aligned'
+        summary = convert(self.source, out, alignment_pixels=True)
+        expected = summary['alignment_bounds_xy_mm']
+        for filename in [p['file'] for p in summary['parts']] + ['backing.stl']:
+            mesh = trimesh.load_mesh(out / filename)
+            np.testing.assert_allclose(mesh.bounds[:, :2], expected)
+            self.assertTrue(mesh.is_watertight)
+            self.assertTrue(mesh.is_winding_consistent)
+        boxes = []
+        for slot in range(4):
+            markers = alignment_markers(.6, .6, .3, slot, 4, .1)
+            np.testing.assert_allclose(markers.bounds[:, :2], expected)
+            self.assertAlmostEqual(markers.volume, 4*.3*.3*.1)
+            for vertices in markers.vertices.reshape(4, 8, 3):
+                boxes.append(np.array([vertices.min(axis=0), vertices.max(axis=0)]))
+        for i, a in enumerate(boxes):
+            for b in boxes[i+1:]:
+                overlap = np.minimum(a[1], b[1]) - np.maximum(a[0], b[0])
+                self.assertFalse(np.all(overlap > 1e-8))
 
     def test_dimensions_and_output_protection(self):
         for kwargs in ({'pixel_mm': 0}, {'pixel_mm': float('nan')},

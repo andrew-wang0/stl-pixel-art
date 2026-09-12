@@ -36,6 +36,12 @@ palette.json
 
 Filenames encode palette index and RGB, not automatic filament assignments. The JSON manifest records dimensions, colors, pixel counts, and filenames. STL has no reliable color or unit metadata; all coordinates here are in millimeters.
 
+## Optional alignment pixels
+
+Use `stl-pixel-art pixelart.png --alignment-pixels -o aligned_stls` to add four disposable pixel-sized markers outside the artwork to each STL, including the backing. Every part then has identical XY bounding-box dimensions and center. Marker positions differ between colors so they do not overlap. The original artwork and backing rectangle stay unchanged; the manifest records the expanded XY bounds.
+
+Import together as parts of one object as usual. If positioning manually, give every part the same XY center and preserve its original Z placement; do not independently drop the backing onto the plate. These markers help XY alignment only. Color markers are one color-layer thick, while backing markers extend from the plate to full model height. They are separate disposable pieces, not attached tabs. Leave them in place for printing and discard afterward, or remove their shells after assembly without recentering the artwork. Check that the expanded footprint fits your plate. Snoopy at 0.3 mm occupies 42.9 × 54.0 mm with markers. Tiny markers may be filtered by the slicer; their bounding boxes still aid assembly before slicing. Actual Bambu Studio behavior requires manual verification.
+
 ## Geometry and orientation
 
 At the defaults, each pixel occupies 0.30 × 0.30 mm. Color parts occupy Z=0–0.10 mm, and the backing occupies Z=0.10–1.00 mm. A 200 × 200 image produces an 60 × 60 mm model. Every part uses the same origin; no mesh is independently centered.

@@ -63,8 +63,22 @@ def pixel_mesh(mask, pixel_mm, color_height):
     return mesh
 
 
+def alignment_markers(width, height, pixel_mm, slot, slot_count, height_mm):
+    """Four disjoint registration pixels giving each part common XY extrema."""
+    span_x = max(width, slot_count * pixel_mm)
+    span_y = max(height, slot_count * pixel_mm)
+    offset = slot * pixel_mm
+    boxes = []
+    for x, y in ((offset, -2*pixel_mm), (offset, span_y+pixel_mm),
+                 (-2*pixel_mm, offset), (span_x+pixel_mm, offset)):
+        box = trimesh.creation.box(extents=(pixel_mm, pixel_mm, height_mm))
+        box.apply_translation((x+pixel_mm/2, y+pixel_mm/2, height_mm/2))
+        boxes.append(box)
+    return trimesh.util.concatenate(boxes)
+
+
 def convert(input_path, output_dir="pixel_stls", pixel_mm=0.3,
-            color_height=0.1, total_height=1.0):
+            color_height=0.1, total_height=1.0, alignment_pixels=False):
     """Write new STL parts and a palette manifest; never overwrite existing files."""
     if not all(math.isfinite(v) and v > 0 for v in (pixel_mm, color_height, total_height)):
         raise ValueError("Dimensions must be finite positive numbers")
@@ -95,17 +109,29 @@ def convert(input_path, output_dir="pixel_stls", pixel_mm=0.3,
     summary = {"image_size": [width, height], "size_mm": [width_mm, height_mm, total_height],
                "pixel_mm": pixel_mm, "color_height": color_height, "parts": parts,
                "backing": "backing.stl"}
+    summary["alignment_pixels"] = alignment_pixels
+    if alignment_pixels:
+        summary["alignment_bounds_xy_mm"] = [
+            [-2*pixel_mm, -2*pixel_mm],
+            [max(width_mm, (len(parts)+1)*pixel_mm)+2*pixel_mm,
+             max(height_mm, (len(parts)+1)*pixel_mm)+2*pixel_mm]]
     output.mkdir(parents=True, exist_ok=True)
     created = []
     try:
-        for part in parts:
+        for slot, part in enumerate(parts):
             mesh = pixel_mesh(indices == part["index"], pixel_mm, color_height)
+            if alignment_pixels:
+                mesh = trimesh.util.concatenate([mesh, alignment_markers(
+                    width_mm, height_mm, pixel_mm, slot, len(parts)+1, color_height)])
             target = output / part["file"]
             with target.open("xb") as stream:
                 created.append(target)
                 stream.write(mesh.export(file_type="stl"))
         backing = trimesh.creation.box(extents=(width_mm, height_mm, total_height-color_height))
         backing.apply_translation((width_mm/2, height_mm/2, (total_height+color_height)/2))
+        if alignment_pixels:
+            backing = trimesh.util.concatenate([backing, alignment_markers(
+                width_mm, height_mm, pixel_mm, len(parts), len(parts)+1, total_height)])
         target = output / "backing.stl"
         with target.open("xb") as stream:
             created.append(target)
@@ -129,15 +155,22 @@ def main(argv=None):
     parser.add_argument("--pixel-mm", type=float, default=0.3)
     parser.add_argument("--color-height", type=float, default=0.1)
     parser.add_argument("--total-height", type=float, default=1.0)
+    parser.add_argument("--alignment-pixels", action="store_true",
+                        help="Add disposable external pixels giving all parts identical XY bounds")
     args = parser.parse_args(argv)
     try:
-        result = convert(args.input, args.output_dir, args.pixel_mm, args.color_height, args.total_height)
+        result = convert(args.input, args.output_dir, args.pixel_mm, args.color_height,
+                         args.total_height, args.alignment_pixels)
     except (ValueError, OSError, Image.DecompressionBombError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
     print(f"Image: {result['image_size'][0]} x {result['image_size'][1]} pixels")
     print("Model: " + " x ".join(f"{v:g}" for v in result["size_mm"]) + " mm")
     print(f"Colors: {len(result['parts'])}")
+    if args.alignment_pixels:
+        bounds = result["alignment_bounds_xy_mm"]
+        print(f"With alignment pixels: {bounds[1][0]-bounds[0][0]:g} x "
+              f"{bounds[1][1]-bounds[0][1]:g} mm; discard external markers after printing")
     for part in result["parts"]:
         print(f"  {part['file']}  RGB{tuple(part['rgb'])}  {part['pixels']} pixels")
     print(f"Written to {args.output_dir}: color parts, backing.stl, palette.json")
